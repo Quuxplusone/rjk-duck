@@ -966,6 +966,9 @@ consteval static bool is_duck_type(std::meta::info type) {
     return true;
 }
 
+template<class Duck>
+concept duck_type = is_duck_type(^^Duck);
+
 consteval static bool is_duck_container(std::meta::info type) {
     type = dealias(decay(type));
     return has_template_arguments(type)
@@ -3688,15 +3691,15 @@ namespace rjk {
         friend consteval bool detail::is_conversion_noexcept_impl();
       public:
         template <typename T> requires (
-            !detail::is_duck_type(^^T) &&
+            !detail::duck_type<T> &&
             (!duck_base_t::requires_copyability || std::copyable<T>) &&
-            (!duck_base_t::requires_class_type || is_class_type(^^T)) &&
+            (!duck_base_t::requires_class_type || std::is_class_v<T>) &&
             duck_base_t::template meets_tags<T>())
         constexpr explicit duck(T&& obj) noexcept(nothrow_constructor<T, T>)
             : duck(detail::init_tag<std::decay_t<T>>{}, std::forward<T>(obj)) {
         }
 
-        template <typename Duck>
+        template <detail::duck_type Duck>
         constexpr explicit(false) duck(Duck&& d) requires (
             !std::same_as<std::decay_t<Duck>, duck> &&
             util::total_subsumption(decay(^^Duck))
@@ -3765,7 +3768,7 @@ namespace rjk {
             : m_underlying(std::in_place_type<T>, std::forward<Args>(args)...)
         { }
 
-        template <typename Duck>
+        template <detail::duck_type Duck>
         constexpr explicit duck(Duck&& d) requires (util::total_const_subsumption(decay(^^Duck)))
             : m_underlying(
                 d.get_underlying(),
@@ -3774,7 +3777,7 @@ namespace rjk {
             )
         { }
 
-        template <typename Duck>
+        template <detail::duck_type Duck>
         constexpr explicit duck(Duck&& d) requires (util::single_trait_subsumption(decay(^^Duck)))
             : m_underlying(
                 d.get_underlying(),
