@@ -2679,6 +2679,30 @@ protected:
         return true;
     }
 
+    static constexpr bool requires_class_type = [] {
+        for (auto trait : vtable_gen_t::traits) {
+            auto tags = members_to_tags(trait);
+            for (auto tag : tags) {
+                if (has_template_arguments(tag) && template_of(tag) == ^^has_fn) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }();
+
+    static constexpr bool requires_copyability = [] {
+        for (auto trait : vtable_gen_t::traits) {
+            auto tags = members_to_tags(trait);
+            for (auto tag : tags) {
+                if (tag == ^^copy_tag) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }();
+
     template <std::meta::operators Op, typename Lhs, typename Rhs>
     consteval static bool satisfies_operator(op_overload_kind kind) noexcept {
         if (!has_operator_tag<Op, Tags...>(kind)) {
@@ -3665,6 +3689,8 @@ namespace rjk {
       public:
         template <typename T> requires (
             !detail::is_duck_type(^^T) &&
+            (!duck_base_t::requires_copyability || std::copyable<T>) &&
+            (!duck_base_t::requires_class_type || is_class_type(^^T)) &&
             duck_base_t::template meets_tags<T>())
         constexpr explicit duck(T&& obj) noexcept(nothrow_constructor<T, T>)
             : duck(detail::init_tag<std::decay_t<T>>{}, std::forward<T>(obj)) {
