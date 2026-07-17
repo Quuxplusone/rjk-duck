@@ -2366,6 +2366,12 @@ struct subsumption_utils {
         return [:gen_t:]::template convert<Traits...[0]>(table);
     }
 };
+
+template<class util, class Duck>
+concept total_const_subsumes = util::total_const_subsumption(decay(^^Duck));
+template<class util, class Duck>
+concept single_trait_subsumes = util::single_trait_subsumption(decay(^^Duck));
+
 }
 
 #endif
@@ -3768,8 +3774,8 @@ namespace rjk {
             : m_underlying(std::in_place_type<T>, std::forward<Args>(args)...)
         { }
 
-        template <detail::duck_type Duck>
-        constexpr explicit duck(Duck&& d) requires (util::total_const_subsumption(decay(^^Duck)))
+        template <detail::total_const_subsumes<util> Duck>
+        constexpr explicit duck(Duck&& d)
             : m_underlying(
                 d.get_underlying(),
                 d.get_vtable()->to_const,
@@ -3777,8 +3783,8 @@ namespace rjk {
             )
         { }
 
-        template <detail::duck_type Duck>
-        constexpr explicit duck(Duck&& d) requires (util::single_trait_subsumption(decay(^^Duck)))
+        template <detail::single_trait_subsumes<util> Duck>
+        constexpr explicit duck(Duck&& d)
             : m_underlying(
                 d.get_underlying(),
                 util::template convert_from<Duck>(d.get_vtable()),
