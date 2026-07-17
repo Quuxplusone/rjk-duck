@@ -36,12 +36,12 @@ namespace rjk {
         template <typename T> requires (
             !detail::is_duck_type(^^T) &&
             duck_base_t::template meets_tags<T>())
-        constexpr explicit duck(T&& obj) noexcept(nothrow_constructor<T, T>)
+        constexpr explicit(false) duck(T&& obj) noexcept(nothrow_constructor<T, T>)
             : duck(detail::init_tag<std::decay_t<T>>{}, std::forward<T>(obj)) {
         }
 
         template <typename Duck>
-        constexpr explicit duck(Duck&& d) requires (
+        constexpr explicit(false) duck(Duck&& d) requires (
             !std::same_as<std::decay_t<Duck>, duck> &&
             util::total_subsumption(decay(^^Duck))
         )
